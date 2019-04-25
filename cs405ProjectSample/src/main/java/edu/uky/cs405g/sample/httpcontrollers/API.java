@@ -26,9 +26,6 @@ public class API {
         gson = new Gson();
     }
 
-
-    //curl http://localhost:9998/api/check
-    //{"status_code":1}
     @GET
     @Path("/status")
     @Produces(MediaType.APPLICATION_JSON)
@@ -36,11 +33,6 @@ public class API {
 
         String responseString = "{\"status_code\":0}";
         try {
-
-            //Here is where you would put your system test, but this is not required.
-            //We just want to make sure your API is up and active/
-            //status_code = 0 , API is offline
-            //status_code = 1 , API is online
             responseString = "{\"status_code\":1}";
 
         } catch (Exception ex) {
@@ -55,186 +47,14 @@ public class API {
         return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
     }
 
+    //--------------------------------------------------------------------------//
+    //---------------------------Start Location Block---------------------------//
+    //--------------------------------------------------------------------------//
 
-    //curl http://localhost:9998/api/listlocations
-    //{"779a038b-aacc-44ca-b8cc-99671475061f":"800 Rose St.","1e4494a9-5677-49e4-b59f-b77c7900c73f":"123 Campus Road"}
-    @GET
-    @Path("/listlocations")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response listTeams() {
-        String responseString = "{}";
-        try {
-            Map<String,String> teamMap = Launcher.dbEngine.getLocations();
-
-            responseString = Launcher.gson.toJson(teamMap);
-
-        } catch (Exception ex) {
-
-            StringWriter sw = new StringWriter();
-            ex.printStackTrace(new PrintWriter(sw));
-            String exceptionAsString = sw.toString();
-            ex.printStackTrace();
-
-            return Response.status(500).entity(exceptionAsString).build();
-        }
-        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
-    }
-
-    //curl http://localhost:9998/api/getlocation/800%20Rose%20St.
-    //{"address":"800 Rose St.","lid":"c078b038-8ad2-4f45-adf0-03a22fffa8b9"}
-    @GET
-    @Path("/getlocation/{address}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response addTeam(@PathParam("address") String address) {
-        String responseString = "{}";
-        try {
-
-            Map<String,String> teamMap = Launcher.dbEngine.getLocation(address);
-
-            responseString = Launcher.gson.toJson(teamMap);
-
-        } catch (Exception ex) {
-
-            StringWriter sw = new StringWriter();
-            ex.printStackTrace(new PrintWriter(sw));
-            String exceptionAsString = sw.toString();
-            ex.printStackTrace();
-
-            return Response.status(500).entity(exceptionAsString).build();
-        }
-        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
-    }
-
-    @GET
-    @Path("/getprovider/{npi}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response addProv(@PathParam("npi") String npi) {
-        String responseString = "{}";
-        try {
-
-            Map<String,String> providerMap = Launcher.dbEngine.getProvider(npi);
-
-            responseString = Launcher.gson.toJson(providerMap);
-
-        } catch (Exception ex) {
-
-            StringWriter sw = new StringWriter();
-            ex.printStackTrace(new PrintWriter(sw));
-            String exceptionAsString = sw.toString();
-            ex.printStackTrace();
-
-            return Response.status(500).entity(exceptionAsString).build();
-        }
-        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
-    }
-
-    @GET
-    @Path("/removeprovider/{npi}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteProvider(@PathParam("npi") String npi) {
-        String responseString = "{}";
-        try {
-
-
-            String queryString = "delete from provider WHERE npi='" + npi + "'";
-
-            System.out.println(queryString);
-
-            int status = Launcher.dbEngine.executeUpdate(queryString);
-
-            System.out.println("status: " + status);
-
-            responseString = "{\"status\":\"" + status +"\"}";
-
-
-        } catch (Exception ex) {
-
-            StringWriter sw = new StringWriter();
-            ex.printStackTrace(new PrintWriter(sw));
-            String exceptionAsString = sw.toString();
-            ex.printStackTrace();
-
-            return Response.status(500).entity(exceptionAsString).build();
-        }
-        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
-    }
-
-    @GET
-    @Path("/getservice/{service_id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response getService(@PathParam("service_id") String service_id) {
-        String responseString = "{}";
-        try {
-
-            Map<String,String> serviceMap = Launcher.dbEngine.getService(service_id);
-            if (serviceMap.size() != 0) {
-                Map<String, String> locationMap = Launcher.dbEngine.getLocationFromId(serviceMap.get("location_id"));
-                Map<String, String> departmentMap = Launcher.dbEngine.getDepartment(serviceMap.get("department_id"));
-                Map<String, String> instMap = Launcher.dbEngine.getInstitutionFromId(departmentMap.get("institution_id"));
-                Map<String, String> responseMap = new HashMap<>();
-                
-                responseMap.put("address", locationMap.get("address"));
-                responseMap.put("department_id", serviceMap.get("department_id"));
-                responseMap.put("taxid", instMap.get("taxid"));
-                responseMap.put("service_id", serviceMap.get("id"));
-
-                responseString = Launcher.gson.toJson(responseMap);
-            }
-
-
-
-
-        } catch (Exception ex) {
-
-            StringWriter sw = new StringWriter();
-            ex.printStackTrace(new PrintWriter(sw));
-            String exceptionAsString = sw.toString();
-            ex.printStackTrace();
-
-            return Response.status(500).entity(exceptionAsString).build();
-        }
-        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
-    }
-
-    //curl http://localhost:9998/api/removelocation/ff2f86ba-ea87-4f5d-8d39-4bdd20b7a532
-    //{"status":"1"}
-    @GET
-    @Path("/removelocation/{location_id}")
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteLocation(@PathParam("location_id") String locationId) {
-        String responseString = "{}";
-        try {
-
-
-            String queryString = "delete from location WHERE lid='" + locationId + "'";
-
-            System.out.println(queryString);
-
-            int status = Launcher.dbEngine.executeUpdate(queryString);
-
-            System.out.println("status: " + status);
-
-            responseString = "{\"status\":\"" + status +"\"}";
-
-
-        } catch (Exception ex) {
-
-            StringWriter sw = new StringWriter();
-            ex.printStackTrace(new PrintWriter(sw));
-            String exceptionAsString = sw.toString();
-            ex.printStackTrace();
-
-            return Response.status(500).entity(exceptionAsString).build();
-        }
-        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
-    }
-
-    //curl -d '{"address":"800 Rose St."}' -H "Content-Type: application/json" -X POST http://localhost:9998/api/addlocation
-    //{"address":"800 Rose St.","lid":"ff2f86ba-ea87-4f5d-8d39-4bdd20b7a532"}
     @POST
     @Path("/addlocation")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response crunchifyREST11(InputStream incomingData) {
+    public Response addLocation(InputStream incomingData) {
 
         StringBuilder crunchifyBuilder = new StringBuilder();
         String returnString = null;
@@ -288,60 +108,68 @@ public class API {
         return Response.ok(returnString).header("Access-Control-Allow-Origin", "*").build();
     }
 
-    @POST
-    @Path("/addprovider")
-    @Consumes(MediaType.APPLICATION_JSON)
-    public Response crunchifyREST13(InputStream incomingData) {
+    @GET
+    @Path("/listlocations")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response listLocations() {
+        String responseString = "{}";
+        try {
+            Map<String,String> teamMap = Launcher.dbEngine.getLocations();
 
-        StringBuilder crunchifyBuilder = new StringBuilder();
-        String returnString = null;
+            responseString = Launcher.gson.toJson(teamMap);
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    @GET
+    @Path("/getlocation/{address}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getLocation(@PathParam("address") String address) {
+        String responseString = "{}";
         try {
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(incomingData));
-            String line = null;
-            while ((line = in.readLine()) != null) {
-                crunchifyBuilder.append(line);
-            }
+            Map<String,String> teamMap = Launcher.dbEngine.getLocation(address);
 
-            String jsonString = crunchifyBuilder.toString();
-            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
-            String npi = myMap.get("npi");
-            String department_id = myMap.get("department_id");
+            responseString = Launcher.gson.toJson(teamMap);
 
-            Map<String,String> departmentMap = Launcher.dbEngine.getDepartment(department_id);
-            System.out.println(departmentMap.size());
+        } catch (Exception ex) {
 
-            if(departmentMap.size() != 0) {
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
 
-                //The department must exist
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
 
-                Map<String, String> providerMap = Launcher.dbEngine.getProvider(npi);
-
-                if (providerMap.size() == 0) {
-                    //we're in business
-                    String createUsersTable = "insert into provider values ('" + npi + "','" + department_id  + "')";
-
-                    System.out.println(createUsersTable);
-
-                    int status = Launcher.dbEngine.executeUpdate(createUsersTable);
-
-                    System.out.println("status: " + status);
-
-                    returnString = "{\"status\":\"" + status +"\"}";
-
-                } else {
-                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided npi already exists!")
-                    .header("Access-Control-Allow-Origin", "*").build();
-                }
-                
+    @GET
+    @Path("/removelocation/{location_id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteLocation(@PathParam("location_id") String locationId) {
+        String responseString = "{}";
+        try {
 
 
+            String queryString = "delete from location WHERE lid='" + locationId + "'";
 
+            System.out.println(queryString);
 
-            } else {
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided department_id doesn't exist!")
-                        .header("Access-Control-Allow-Origin", "*").build();
-            }
+            int status = Launcher.dbEngine.executeUpdate(queryString);
+
+            System.out.println("status: " + status);
+
+            responseString = "{\"status\":\"" + status +"\"}";
 
 
         } catch (Exception ex) {
@@ -351,12 +179,19 @@ public class API {
             String exceptionAsString = sw.toString();
             ex.printStackTrace();
 
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Internal Server Error")
-                    .header("Access-Control-Allow-Origin", "*").build();
+            return Response.status(500).entity(exceptionAsString).build();
         }
-
-        return Response.ok(returnString).header("Access-Control-Allow-Origin", "*").build();
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
     }
+
+    //--------------------------------------------------------------------------//
+    //----------------------------End Location Block----------------------------//
+    //--------------------------------------------------------------------------//
+
+
+    //--------------------------------------------------------------------------//
+    //---------------------------Start Service Block----------------------------//
+    //--------------------------------------------------------------------------//
 
     @POST
     @Path("/addservice")
@@ -501,5 +336,618 @@ public class API {
 
         return Response.ok(returnString).header("Access-Control-Allow-Origin", "*").build();
     }
+
+    @GET
+    @Path("/getservice/{service_id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getService(@PathParam("service_id") String service_id) {
+        String responseString = "{}";
+        try {
+
+            Map<String,String> serviceMap = Launcher.dbEngine.getService(service_id);
+            //Step 1 is to get the service
+            if (serviceMap.size() != 0) {
+                //Then we need a few things that aren't directly in service,
+                //so we grab those with the data from the service.
+                Map<String, String> locationMap = Launcher.dbEngine.getLocationFromId(serviceMap.get("location_id"));
+                Map<String, String> departmentMap = Launcher.dbEngine.getDepartment(serviceMap.get("department_id"));
+                Map<String, String> instMap = Launcher.dbEngine.getInstitutionFromId(departmentMap.get("institution_id"));
+                Map<String, String> responseMap = new HashMap<>();
+                
+                responseMap.put("address", locationMap.get("address"));
+                responseMap.put("department_id", serviceMap.get("department_id"));
+                responseMap.put("taxid", instMap.get("taxid"));
+                responseMap.put("service_id", serviceMap.get("id"));
+
+                responseString = Launcher.gson.toJson(responseMap);
+            }
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    @GET
+    @Path("/removeservice/{service_id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteService(@PathParam("service_id") String service_id) {
+        String responseString = "{}";
+        try {
+
+            //First step is to verify that the service exists
+            //And grab data from it for the cleanup
+            Map<String, String> serviceMap = Launcher.dbEngine.getService(service_id);
+            int status;
+
+            if (serviceMap.size() != 0) {
+                String queryString = "delete from service WHERE id='" + service_id + "'"; 
+                status = Launcher.dbEngine.executeUpdate(queryString);
+                //Handle other stuff
+            } else {
+                status = 0;
+            }
+
+
+            responseString = "{\"status\":\"" + status +"\"}";
+
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    //stuff for PLAN B
+
+    @GET
+    @Path("/removedepartment/{department_id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteDepartment(@PathParam("department_id") String department_id) {
+        String responseString = "{}";
+        try {
+
+            Map<String, String> departmentMap = Launcher.dbEngine.getDepartment(department_id);
+
+            int status;
+
+
+            if (departmentMap.size() != 0) {
+                
+
+                String queryString = "delete from department WHERE id='" + department_id + "'"; 
+                
+                status = Launcher.dbEngine.executeUpdate(queryString);
+                //Handle other stuff
+            } else {
+                status = 0;
+            }
+
+
+            responseString = "{\"status\":\"" + status +"\"}";
+
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    @GET
+    @Path("/removeinstitution/{taxid}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteInstitution(@PathParam("taxid") String taxid) {
+        String responseString = "{}";
+        try {
+
+            Map<String, String> institutionMap = Launcher.dbEngine.getInstitution(taxid);
+
+            int status;
+
+
+            if (institutionMap.size() != 0) {
+                
+
+                String queryString = "delete from institution WHERE tid='" + taxid + "'"; 
+                
+                status = Launcher.dbEngine.executeUpdate(queryString);
+                //Handle other stuff
+            } else {
+                status = 0;
+            }
+
+
+            responseString = "{\"status\":\"" + status +"\"}";
+
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    @GET
+    @Path("/removeaddress/{address}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteLocationByAddress(@PathParam("address") String address) {
+        String responseString = "{}";
+        try {
+
+            Map<String, String> locationMap = Launcher.dbEngine.getLocation(address);
+
+            int status;
+
+
+            if (locationMap.size() != 0) {
+                
+
+                String queryString = "delete from location WHERE address='" + address + "'"; 
+                
+                status = Launcher.dbEngine.executeUpdate(queryString);
+                //Handle other stuff
+            } else {
+                status = 0;
+            }
+
+
+            responseString = "{\"status\":\"" + status +"\"}";
+
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+
+    //--------------------------------------------------------------------------//
+    //-----------------------------End Service Block----------------------------//
+    //--------------------------------------------------------------------------//
+
+
+    //--------------------------------------------------------------------------//
+    //--------------------------Start Provider Block----------------------------//
+    //--------------------------------------------------------------------------//
+
+
+    @POST
+    @Path("/addprovider")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response crunchifyREST13(InputStream incomingData) {
+
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        String returnString = null;
+        try {
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(incomingData));
+            String line = null;
+            while ((line = in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+
+            String jsonString = crunchifyBuilder.toString();
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            String npi = myMap.get("npi");
+            String department_id = myMap.get("department_id");
+
+            Map<String,String> departmentMap = Launcher.dbEngine.getDepartment(department_id);
+            System.out.println(departmentMap.size());
+
+            if(departmentMap.size() != 0) {
+                //The department must exist
+                Map<String, String> providerMap = Launcher.dbEngine.getProvider(npi);
+
+                if (providerMap.size() == 0) {
+                    //we're in business
+                    String createUsersTable = "insert into provider values ('" + npi + "','" + department_id  + "')";
+                    System.out.println(createUsersTable);
+                    int status = Launcher.dbEngine.executeUpdate(createUsersTable);
+                    System.out.println("status: " + status);
+                    returnString = "{\"status\":\"" + status +"\"}";
+
+                } else {
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided npi already exists!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+                }
+                
+
+            } else {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided department_id doesn't exist!")
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Internal Server Error")
+                    .header("Access-Control-Allow-Origin", "*").build();
+        }
+
+        return Response.ok(returnString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    @GET
+    @Path("/getprovider/{npi}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response addProv(@PathParam("npi") String npi) {
+        String responseString = "{}";
+        try {
+
+            Map<String,String> providerMap = Launcher.dbEngine.getProvider(npi);
+
+            responseString = Launcher.gson.toJson(providerMap);
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    @GET
+    @Path("/removeprovider/{npi}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteProvider(@PathParam("npi") String npi) {
+        String responseString = "{}";
+        try {
+
+
+            String queryString = "delete from provider WHERE npi='" + npi + "'";
+
+            System.out.println(queryString);
+
+            int status = Launcher.dbEngine.executeUpdate(queryString);
+
+            System.out.println("status: " + status);
+
+            responseString = "{\"status\":\"" + status +"\"}";
+
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    //--------------------------------------------------------------------------//
+    //---------------------------End Provider Block-----------------------------//
+    //--------------------------------------------------------------------------//
+
+
+    //--------------------------------------------------------------------------//
+    //---------------------------Start Patient Block----------------------------//
+    //--------------------------------------------------------------------------//
+
+    @POST
+    @Path("/addpatient")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response addPatient(InputStream incomingData) {
+
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        String returnString = null;
+        int status = 0;
+        try {
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(incomingData));
+            String line = null;
+            while ((line = in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+
+            String jsonString = crunchifyBuilder.toString();
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+            String pid = myMap.get("pid");
+            String ssn = myMap.get("ssn");
+            //
+            String address = myMap.get("address");
+            //provider id must exist already
+            String provider_id = myMap.get("provider_id");
+
+            Map<String,String> addressMap = Launcher.dbEngine.getLocation(address);
+            Map<String,String> patientMap = Launcher.dbEngine.getPatient(pid);
+            Map<String,String> providerMap = Launcher.dbEngine.getProvider(provider_id);
+            Map<String, String> ssnMap = Launcher.dbEngine.getPatientBySSN(ssn);
+
+            if(patientMap.size() == 0) {
+                if (ssnMap.size() == 0) {
+
+                    if(providerMap.size() == 0) {
+                        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Invalid Provider ID entered!")
+                        .header("Access-Control-Allow-Origin", "*").build();
+                    }
+                
+                    if(addressMap.size() == 0) {
+
+                    //generate a new unique location Id
+                        String locationId = UUID.randomUUID().toString();
+
+                        String createUsersTable = "insert into location values ('" + locationId + "','" + address  + "')";
+
+                        System.out.println(createUsersTable);
+
+                        Launcher.dbEngine.executeUpdate(createUsersTable);
+
+                        addressMap = Launcher.dbEngine.getLocation(address);
+
+
+                    } else {
+                        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Can't insert duplicate location address!")
+                                .header("Access-Control-Allow-Origin", "*").build();
+                    }
+
+                    String createUsersTable = "insert into patient value ('" + pid + "','" + ssn + "', '" + address + "','" + provider_id + "')";
+                    System.out.println(createUsersTable);
+                    status = Launcher.dbEngine.executeUpdate(createUsersTable);
+                    patientMap = Launcher.dbEngine.getPatient(pid);
+                    returnString = "{\"status\":\"" + status +"\"}";
+                } else {
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Cannot Insert duplicate social security numbers!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+                }
+
+            } else {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Cannot Insert duplicate patient ID numbers!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            }
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Internal Server Error")
+                    .header("Access-Control-Allow-Origin", "*").build();
+        }
+
+        return Response.ok(returnString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    @GET
+    @Path("/getpatient/{pid}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getPatient(@PathParam("pid") String pid) {
+        String responseString = "{}";
+        try {
+
+            Map<String,String> patientMap = Launcher.dbEngine.getPatient(pid);
+
+            responseString = Launcher.gson.toJson(patientMap);
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    @GET
+    @Path("/removepatient/{pid}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deletePatient(@PathParam("pid") String pid) {
+        String responseString = "{}";
+        try {
+
+
+            String queryString = "delete from patient WHERE pid='" + pid + "'";
+
+            System.out.println(queryString);
+
+            int status = Launcher.dbEngine.executeUpdate(queryString);
+
+            System.out.println("status: " + status);
+
+            responseString = "{\"status\":\"" + status +"\"}";
+
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    //--------------------------------------------------------------------------//
+    //----------------------------End Patient Block-----------------------------//
+    //--------------------------------------------------------------------------//
+
+
+    //--------------------------------------------------------------------------//
+    //-----------------------------Start Data Block-----------------------------//
+    //--------------------------------------------------------------------------//
+
+    @POST
+    @Path("/adddata")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response adddata(InputStream incomingData) {
+
+        StringBuilder crunchifyBuilder = new StringBuilder();
+        String returnString = null;
+        try {
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(incomingData));
+            String line = null;
+            while ((line = in.readLine()) != null) {
+                crunchifyBuilder.append(line);
+            }
+
+            String jsonString = crunchifyBuilder.toString();
+            Map<String, String> myMap = gson.fromJson(jsonString, mapType);
+
+            String id = myMap.get("id");
+            String ts = myMap.get("ts");
+            String patient_id = myMap.get("patient_id");
+            String service_id = myMap.get("service_id");
+            String some_data = myMap.get("some_data");
+
+            //Map<String,String> departmentMap = Launcher.dbEngine.getDepartment(department_id);
+            //System.out.println(departmentMap.size());
+
+            Map<String,String> patientMap = Launcher.dbEngine.getPatient(patient_id);
+            System.out.println(patientMap.size());
+            Map<String,String> serviceMap = Launcher.dbEngine.getService(service_id);
+            System.out.println(serviceMap.size());
+            Map<String, String> dataMap = Launcher.dbEngine.getdata(id);
+            System.out.println(dataMap.size());
+
+
+            if (dataMap.size() != 0) {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided data id already exists!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            }
+
+            if(patientMap.size() != 0) {
+
+                //The department must exist
+
+                dataMap = Launcher.dbEngine.getdata(id);
+
+                if (dataMap.size() == 0) {
+                    //we're in business
+                    String createUsersTable = "insert into data values ('" + id + "','" + ts + "','" + patient_id + "','" + service_id + "','" + some_data + "')";
+
+                    System.out.println(createUsersTable);
+
+                    int status = Launcher.dbEngine.executeUpdate(createUsersTable);
+
+                    System.out.println("status: " + status);
+
+                    returnString = "{\"status\":\"" + status +"\"}";
+
+                } else {
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided id already exists!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+                }
+
+            } else {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided patient_id doesn't exist!")
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+
+            if(serviceMap.size() != 0) {
+
+                //The department must exist
+
+                dataMap = Launcher.dbEngine.getdata(id);
+
+                if (dataMap.size() == 0) {
+                    //we're in business
+                    String createUsersTable = "insert into data values ('" + id + "','" + ts + "','" + patient_id + "','" + service_id + "','" + some_data + "')";
+
+                    System.out.println(createUsersTable);
+
+                    int status = Launcher.dbEngine.executeUpdate(createUsersTable);
+
+                    System.out.println("status: " + status);
+
+                    returnString = "{\"status\":\"" + status +"\"}";
+
+                } else {
+                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided id already exists!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+                }
+                
+            } else {
+                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided service_id doesn't exist!")
+                        .header("Access-Control-Allow-Origin", "*").build();
+            }
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Internal Server Error")
+                    .header("Access-Control-Allow-Origin", "*").build();
+        }
+
+        return Response.ok(returnString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    @GET
+    @Path("/getdata/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getData(@PathParam("id") String id) {
+        String responseString = "{}";
+        try {
+
+            Map<String,String> dataMap = Launcher.dbEngine.getdata(id);
+            responseString = Launcher.gson.toJson(dataMap);
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+
+    //--------------------------------------------------------------------------//
+    //------------------------------End Data Block------------------------------//
+    //--------------------------------------------------------------------------//
 
 }

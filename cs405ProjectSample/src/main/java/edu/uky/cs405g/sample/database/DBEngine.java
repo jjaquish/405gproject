@@ -236,7 +236,87 @@ public class DBEngine {
         return serviceMap;
     }
 
-        public Map<String,String> getProvider(String npi) {
+    public Map<String,String> getPatient(String pid) {
+        Map<String,String> patientMap = new HashMap<>();
+
+        Statement stmt = null;
+        try
+        {
+            Connection conn = ds.getConnection();
+            String queryString = null;
+
+            queryString = "SELECT * FROM patient WHERE pid='" + pid + "'";
+
+            stmt = conn.createStatement();
+
+            ResultSet rs = stmt.executeQuery(queryString);
+
+            while (rs.next()) {
+                pid = rs.getString("pid");
+                patientMap.put("pid",pid);
+                String ssn = rs.getString("ssn");
+                patientMap.put("ssn",ssn);
+                String address = rs.getString("address");
+                patientMap.put("address",address);
+                String provider_id = rs.getString("provider_id");
+                patientMap.put("provider_id",provider_id);
+            }
+
+            rs.close();
+            stmt.close();
+            conn.close();
+
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+
+        return patientMap;
+    }
+
+    //getPatientBySSN(ssn);
+
+    public Map<String,String> getPatientBySSN(String ssn) {
+        Map<String,String> patientMap = new HashMap<>();
+
+        Statement stmt = null;
+        try
+        {
+            Connection conn = ds.getConnection();
+            String queryString = null;
+
+            queryString = "SELECT * FROM patient WHERE ssn='" + ssn + "'";
+
+            stmt = conn.createStatement();
+
+            ResultSet rs = stmt.executeQuery(queryString);
+
+            while (rs.next()) {
+                String pid = rs.getString("pid");
+                patientMap.put("pid",pid);
+                //String ssn = rs.getString("ssn");
+                patientMap.put("ssn",ssn);
+                String address = rs.getString("address");
+                patientMap.put("address",address);
+                String provider_id = rs.getString("provider_id");
+                patientMap.put("provider_id",provider_id);
+            }
+
+            rs.close();
+            stmt.close();
+            conn.close();
+
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+
+        return patientMap;
+    }
+
+    public Map<String,String> getProvider(String npi) {
         Map<String,String> providerMap = new HashMap<>();
 
         Statement stmt = null;
@@ -270,7 +350,7 @@ public class DBEngine {
         return providerMap;
     }
 
-        public Map<String,String> getPatient(String address) {
+        public Map<String,String> getPatient2(String address) {
         Map<String,String> locationMap = new HashMap<>();
 
         Statement stmt = null;
@@ -338,7 +418,7 @@ public class DBEngine {
         return departmentMap;
     }
 
-        public Map<String,String> getData(String address) {
+        public Map<String,String> getdata(String address) {
         Map<String,String> locationMap = new HashMap<>();
 
         Statement stmt = null;
