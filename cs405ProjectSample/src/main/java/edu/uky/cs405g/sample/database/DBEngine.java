@@ -316,6 +316,47 @@ public class DBEngine {
         return patientMap;
     }
 
+    public Map<String,String> getPatientByAddress(String address) {
+        Map<String,String> patientMap = new HashMap<>();
+
+        Statement stmt = null;
+        try
+        {
+            Connection conn = ds.getConnection();
+            String queryString = null;
+
+            queryString = "SELECT * FROM patient WHERE address='" + address + "'";
+
+            stmt = conn.createStatement();
+
+            ResultSet rs = stmt.executeQuery(queryString);
+
+            while (rs.next()) {
+                String pid = rs.getString("pid");
+                patientMap.put("pid",pid);
+                String ssn = rs.getString("ssn");
+                patientMap.put("ssn",ssn);
+                //String address = rs.getString("address");
+                patientMap.put("address",address);
+                String provider_id = rs.getString("provider_id");
+                patientMap.put("provider_id",provider_id);
+            }
+
+            rs.close();
+            stmt.close();
+            conn.close();
+
+        }
+        catch(Exception ex)
+        {
+            ex.printStackTrace();
+        }
+
+        return patientMap;
+    }
+
+
+
     public Map<String,String> getProvider(String npi) {
         Map<String,String> providerMap = new HashMap<>();
 
@@ -418,8 +459,8 @@ public class DBEngine {
         return departmentMap;
     }
 
-        public Map<String,String> getdata(String address) {
-        Map<String,String> locationMap = new HashMap<>();
+        public Map<String,String> getData(String id) {
+        Map<String,String> dataMap = new HashMap<>();
 
         Statement stmt = null;
         try
@@ -427,16 +468,22 @@ public class DBEngine {
             Connection conn = ds.getConnection();
             String queryString = null;
 
-            queryString = "SELECT * FROM location WHERE address='" + address + "'";
+            queryString = "SELECT * FROM data WHERE id='" + id + "'";
 
             stmt = conn.createStatement();
 
             ResultSet rs = stmt.executeQuery(queryString);
 
             while (rs.next()) {
-                String lid = rs.getString("lid");
-                locationMap.put("lid", lid);
-                locationMap.put("address", address);
+                String ts = rs.getString("ts");
+                String patient_id = rs.getString("patient_id");
+                String service_id = rs.getString("service_id");
+                String some_data = rs.getString("some_data");
+                dataMap.put("data", some_data);
+                dataMap.put("patient_id", patient_id);
+                dataMap.put("service_id", service_id);
+                dataMap.put("id", id);
+                dataMap.put("ts", ts);
             }
 
             rs.close();
@@ -449,7 +496,7 @@ public class DBEngine {
             ex.printStackTrace();
         }
 
-        return locationMap;
+        return dataMap;
     }
 
     public Map<String,String> getInstitution(String taxId) {

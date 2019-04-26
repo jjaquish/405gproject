@@ -1,6 +1,5 @@
 package edu.uky.cs405g.sample.httpcontrollers;
 
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import edu.uky.cs405g.sample.Launcher;
@@ -13,6 +12,8 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.UUID;
 import java.util.HashMap;
+import java.sql.Timestamp;
+import java.util.Date;
 
 @Path("/api")
 public class API {
@@ -89,7 +90,7 @@ public class API {
 
 
             } else {
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Can't insert duplicate location address!")
+                return Response.status(Response.Status.FORBIDDEN).entity("Can't insert duplicate location address!")
                         .header("Access-Control-Allow-Origin", "*").build();
             }
 
@@ -125,7 +126,7 @@ public class API {
             String exceptionAsString = sw.toString();
             ex.printStackTrace();
 
-            return Response.status(500).entity(exceptionAsString).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(exceptionAsString).build();
         }
         return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
     }
@@ -148,7 +149,7 @@ public class API {
             String exceptionAsString = sw.toString();
             ex.printStackTrace();
 
-            return Response.status(500).entity(exceptionAsString).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(exceptionAsString).build();
         }
         return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
     }
@@ -167,10 +168,17 @@ public class API {
 
             int status = Launcher.dbEngine.executeUpdate(queryString);
 
-            System.out.println("status: " + status);
+            System.out.println("status_code: " + status);
 
-            responseString = "{\"status\":\"" + status +"\"}";
+            responseString = "{\"status_code\":\"" + status +"\"}";
 
+            if (status == -1) {
+                return Response.status(Response.Status.FORBIDDEN).entity("Couldn't remove the location. It is referenced elsewhere!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            } else if (status == 0) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Couldn't remove the location. It doesn't exist!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            }
 
         } catch (Exception ex) {
 
@@ -179,7 +187,7 @@ public class API {
             String exceptionAsString = sw.toString();
             ex.printStackTrace();
 
-            return Response.status(500).entity(exceptionAsString).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(exceptionAsString).build();
         }
         return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
     }
@@ -216,8 +224,6 @@ public class API {
             String departmentId = myMap.get("department_id");
             String serviceId = myMap.get("service_id");
             String taxId = myMap.get("taxid");
-
-            //returnString = address + " - " + dptmtId + " - " + serviceId + " - " + taxId;
 
             Map<String,String> addressMap = Launcher.dbEngine.getLocation(address);
             Map<String, String> departmentMap = Launcher.dbEngine.getDepartment(departmentId);
@@ -268,7 +274,7 @@ public class API {
                         taxMap = Launcher.dbEngine.getInstitution(taxId);
 
                     } else {
-                        //The department doesn't exist but the institutiob does exist in here.
+                        //The department doesn't exist but the institution does exist in here.
                         dpInstId = taxMap.get("id");
                     }
 
@@ -295,11 +301,11 @@ public class API {
 
                     if (taxMap.size() == 0) { // || taxMap.get("id") != departmentMap.get("institution_id")) {
 
-                        return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The taxId you entered doesn't exist even though the department does!")
+                        return Response.status(Response.Status.FORBIDDEN).entity("The taxId you entered doesn't exist even though the department does!")
                         .header("Access-Control-Allow-Origin", "*").build();
                     } else if(!mytid.equals(myiid)) {
                         System.out.println(mytid + "\n" + myiid);
-                       return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The taxId you entered doesn't match the pre-existing department!")
+                       return Response.status(Response.Status.FORBIDDEN).entity("The taxId you entered doesn't match the pre-existing department!")
                         .header("Access-Control-Allow-Origin", "*").build(); 
                     }
 
@@ -318,7 +324,7 @@ public class API {
 
 
             } else {
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Can't insert duplicate service ID!")
+                return Response.status(Response.Status.FORBIDDEN).entity("Can't insert duplicate service ID!")
                         .header("Access-Control-Allow-Origin", "*").build();
             }
 
@@ -352,8 +358,12 @@ public class API {
                 Map<String, String> locationMap = Launcher.dbEngine.getLocationFromId(serviceMap.get("location_id"));
                 Map<String, String> departmentMap = Launcher.dbEngine.getDepartment(serviceMap.get("department_id"));
                 Map<String, String> instMap = Launcher.dbEngine.getInstitutionFromId(departmentMap.get("institution_id"));
+                //This is a new mao we're creating for the results because no method
+                //in DBEngine returns what we need exactly
                 Map<String, String> responseMap = new HashMap<>();
                 
+                //Here we put the various parts of our response
+                //into the map we created earlier for it.
                 responseMap.put("address", locationMap.get("address"));
                 responseMap.put("department_id", serviceMap.get("department_id"));
                 responseMap.put("taxid", instMap.get("taxid"));
@@ -369,7 +379,7 @@ public class API {
             String exceptionAsString = sw.toString();
             ex.printStackTrace();
 
-            return Response.status(500).entity(exceptionAsString).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(exceptionAsString).build();
         }
         return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
     }
@@ -389,13 +399,20 @@ public class API {
             if (serviceMap.size() != 0) {
                 String queryString = "delete from service WHERE id='" + service_id + "'"; 
                 status = Launcher.dbEngine.executeUpdate(queryString);
-                //Handle other stuff
             } else {
                 status = 0;
             }
 
 
-            responseString = "{\"status\":\"" + status +"\"}";
+            responseString = "{\"status_code\":\"" + status +"\"}";
+
+            if (status == -1) {
+                return Response.status(Response.Status.FORBIDDEN).entity("Couldn't remove the service. It is referenced elsewhere!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            } else if (status == 0) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Couldn't remove the service. It doesn't exist!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            }
 
 
         } catch (Exception ex) {
@@ -405,7 +422,7 @@ public class API {
             String exceptionAsString = sw.toString();
             ex.printStackTrace();
 
-            return Response.status(500).entity(exceptionAsString).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(exceptionAsString).build();
         }
         return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
     }
@@ -436,7 +453,15 @@ public class API {
             }
 
 
-            responseString = "{\"status\":\"" + status +"\"}";
+            responseString = "{\"status_code\":\"" + status +"\"}";
+
+            if (status == -1) {
+                return Response.status(Response.Status.FORBIDDEN).entity("Couldn't remove the department. It is referenced elsewhere!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            } else if (status == 0) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Couldn't remove the department. It doesn't exist!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            }
 
 
         } catch (Exception ex) {
@@ -446,7 +471,7 @@ public class API {
             String exceptionAsString = sw.toString();
             ex.printStackTrace();
 
-            return Response.status(500).entity(exceptionAsString).build();
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(exceptionAsString).build();
         }
         return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
     }
@@ -475,7 +500,15 @@ public class API {
             }
 
 
-            responseString = "{\"status\":\"" + status +"\"}";
+            responseString = "{\"status_code\":\"" + status +"\"}";
+
+            if (status == -1) {
+                return Response.status(Response.Status.FORBIDDEN).entity("Couldn't remove the institution. It is referenced elsewhere!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            } else if (status == 0) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Couldn't remove the institution. It doesn't exist!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            }
 
 
         } catch (Exception ex) {
@@ -513,8 +546,16 @@ public class API {
                 status = 0;
             }
 
+            if (status == -1) {
+                return Response.status(Response.Status.FORBIDDEN).entity("Couldn't remove the location. It is referenced elsewhere!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            } else if (status == 0) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Couldn't remove the location. It doesn't exist!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            }
 
-            responseString = "{\"status\":\"" + status +"\"}";
+
+            responseString = "{\"status_code\":\"" + status +"\"}";
 
 
         } catch (Exception ex) {
@@ -546,7 +587,7 @@ public class API {
     public Response crunchifyREST13(InputStream incomingData) {
 
         StringBuilder crunchifyBuilder = new StringBuilder();
-        String returnString = null;
+        String returnString = "{\"status_code\":\"" + '0' +"\"}";
         try {
 
             BufferedReader in = new BufferedReader(new InputStreamReader(incomingData));
@@ -564,25 +605,23 @@ public class API {
             System.out.println(departmentMap.size());
 
             if(departmentMap.size() != 0) {
-                //The department must exist
                 Map<String, String> providerMap = Launcher.dbEngine.getProvider(npi);
 
                 if (providerMap.size() == 0) {
-                    //we're in business
                     String createUsersTable = "insert into provider values ('" + npi + "','" + department_id  + "')";
                     System.out.println(createUsersTable);
                     int status = Launcher.dbEngine.executeUpdate(createUsersTable);
-                    System.out.println("status: " + status);
-                    returnString = "{\"status\":\"" + status +"\"}";
+                    System.out.println("status_code: " + status);
+                    returnString = "{\"status_code\":\"" + status +"\"}";
 
                 } else {
-                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided npi already exists!")
+                    return Response.status(Response.Status.FORBIDDEN).entity("The provided npi already exists!")
                     .header("Access-Control-Allow-Origin", "*").build();
                 }
                 
 
             } else {
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided department_id doesn't exist!")
+                return Response.status(Response.Status.NOT_FOUND).entity("The provided department_id doesn't exist!")
                         .header("Access-Control-Allow-Origin", "*").build();
             }
 
@@ -638,9 +677,17 @@ public class API {
 
             int status = Launcher.dbEngine.executeUpdate(queryString);
 
-            System.out.println("status: " + status);
+            System.out.println("status_code: " + status);
 
-            responseString = "{\"status\":\"" + status +"\"}";
+            responseString = "{\"status_code\":\"" + status +"\"}";
+
+            if (status == -1) {
+                return Response.status(Response.Status.FORBIDDEN).entity("Couldn't remove the provider. It is referenced elsewhere!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            } else if (status == 0) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Couldn't remove the provider. It doesn't exist!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            }
 
 
         } catch (Exception ex) {
@@ -689,7 +736,7 @@ public class API {
             //provider id must exist already
             String provider_id = myMap.get("provider_id");
 
-            Map<String,String> addressMap = Launcher.dbEngine.getLocation(address);
+            //Map<String,String> addressMap = Launcher.dbEngine.getPatientByAddress(address);
             Map<String,String> patientMap = Launcher.dbEngine.getPatient(pid);
             Map<String,String> providerMap = Launcher.dbEngine.getProvider(provider_id);
             Map<String, String> ssnMap = Launcher.dbEngine.getPatientBySSN(ssn);
@@ -702,9 +749,9 @@ public class API {
                         .header("Access-Control-Allow-Origin", "*").build();
                     }
                 
-                    if(addressMap.size() == 0) {
+                    /*if(addressMap.size() == 0) {
 
-                    //generate a new unique location Id
+                        //generate a new unique location Id
                         String locationId = UUID.randomUUID().toString();
 
                         String createUsersTable = "insert into location values ('" + locationId + "','" + address  + "')";
@@ -719,13 +766,13 @@ public class API {
                     } else {
                         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Can't insert duplicate location address!")
                                 .header("Access-Control-Allow-Origin", "*").build();
-                    }
+                    }*/
 
                     String createUsersTable = "insert into patient value ('" + pid + "','" + ssn + "', '" + address + "','" + provider_id + "')";
                     System.out.println(createUsersTable);
                     status = Launcher.dbEngine.executeUpdate(createUsersTable);
                     patientMap = Launcher.dbEngine.getPatient(pid);
-                    returnString = "{\"status\":\"" + status +"\"}";
+                    returnString = "{\"status_code\":\"" + status +"\"}";
                 } else {
                     return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Cannot Insert duplicate social security numbers!")
                     .header("Access-Control-Allow-Origin", "*").build();
@@ -760,6 +807,7 @@ public class API {
             Map<String,String> patientMap = Launcher.dbEngine.getPatient(pid);
 
             responseString = Launcher.gson.toJson(patientMap);
+            //404 would be not found
 
         } catch (Exception ex) {
 
@@ -780,16 +828,23 @@ public class API {
         String responseString = "{}";
         try {
 
-
             String queryString = "delete from patient WHERE pid='" + pid + "'";
 
             System.out.println(queryString);
 
             int status = Launcher.dbEngine.executeUpdate(queryString);
 
-            System.out.println("status: " + status);
+            System.out.println("status_code: " + status);
 
-            responseString = "{\"status\":\"" + status +"\"}";
+            responseString = "{\"status_code\":\"" + status +"\"}";
+
+            if (status == -1) {
+                return Response.status(Response.Status.FORBIDDEN).entity("Couldn't remove the patient. It is referenced elsewhere!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            } else if (status == 0) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Couldn't remove the patient. It doesn't exist!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            }
 
 
         } catch (Exception ex) {
@@ -832,80 +887,53 @@ public class API {
             Map<String, String> myMap = gson.fromJson(jsonString, mapType);
 
             String id = myMap.get("id");
-            String ts = myMap.get("ts");
+            Timestamp timestamp = new Timestamp(System.currentTimeMillis());
             String patient_id = myMap.get("patient_id");
             String service_id = myMap.get("service_id");
-            String some_data = myMap.get("some_data");
-
-            //Map<String,String> departmentMap = Launcher.dbEngine.getDepartment(department_id);
-            //System.out.println(departmentMap.size());
+            String some_data = myMap.get("data");
 
             Map<String,String> patientMap = Launcher.dbEngine.getPatient(patient_id);
             System.out.println(patientMap.size());
             Map<String,String> serviceMap = Launcher.dbEngine.getService(service_id);
             System.out.println(serviceMap.size());
-            Map<String, String> dataMap = Launcher.dbEngine.getdata(id);
+            Map<String, String> dataMap = Launcher.dbEngine.getData(id);
             System.out.println(dataMap.size());
 
-
             if (dataMap.size() != 0) {
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided data id already exists!")
+                return Response.status(Response.Status.FORBIDDEN).entity("The provided data id already exists!")
                     .header("Access-Control-Allow-Origin", "*").build();
             }
 
             if(patientMap.size() != 0) {
 
-                //The department must exist
+                if(serviceMap.size() != 0) {
 
-                dataMap = Launcher.dbEngine.getdata(id);
+                    dataMap = Launcher.dbEngine.getData(id);
 
-                if (dataMap.size() == 0) {
-                    //we're in business
-                    String createUsersTable = "insert into data values ('" + id + "','" + ts + "','" + patient_id + "','" + service_id + "','" + some_data + "')";
+                    if (dataMap.size() == 0) {
+                        //we're in business
+                        String createUsersTable = "insert into data values ('" + id + "','" + timestamp.toString() + "','" + patient_id + "','" + service_id + "','" + some_data + "')";
 
-                    System.out.println(createUsersTable);
+                        System.out.println(createUsersTable);
 
-                    int status = Launcher.dbEngine.executeUpdate(createUsersTable);
+                        int status = Launcher.dbEngine.executeUpdate(createUsersTable);
 
-                    System.out.println("status: " + status);
+                        System.out.println("status_code: " + status);
 
-                    returnString = "{\"status\":\"" + status +"\"}";
+                        returnString = "{\"status_code\":\"" + status +"\"}";
 
-                } else {
-                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided id already exists!")
-                    .header("Access-Control-Allow-Origin", "*").build();
-                }
-
-            } else {
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided patient_id doesn't exist!")
+                    } else {
+                        return Response.status(Response.Status.FORBIDDEN).entity("The provided id already exists!")
                         .header("Access-Control-Allow-Origin", "*").build();
-            }
-
-            if(serviceMap.size() != 0) {
-
-                //The department must exist
-
-                dataMap = Launcher.dbEngine.getdata(id);
-
-                if (dataMap.size() == 0) {
-                    //we're in business
-                    String createUsersTable = "insert into data values ('" + id + "','" + ts + "','" + patient_id + "','" + service_id + "','" + some_data + "')";
-
-                    System.out.println(createUsersTable);
-
-                    int status = Launcher.dbEngine.executeUpdate(createUsersTable);
-
-                    System.out.println("status: " + status);
-
-                    returnString = "{\"status\":\"" + status +"\"}";
-
+                    }
+                    
                 } else {
-                    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided id already exists!")
-                    .header("Access-Control-Allow-Origin", "*").build();
+                    return Response.status(Response.Status.NOT_FOUND).entity("The provided service_id doesn't exist!")
+                            .header("Access-Control-Allow-Origin", "*").build();
                 }
-                
+
             } else {
-                return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("The provided service_id doesn't exist!")
+                return Response.status(Response.Status.NOT_FOUND).entity("The provided patient_id doesn't exist!")
                         .header("Access-Control-Allow-Origin", "*").build();
             }
 
@@ -930,8 +958,47 @@ public class API {
         String responseString = "{}";
         try {
 
-            Map<String,String> dataMap = Launcher.dbEngine.getdata(id);
+            Map<String,String> dataMap = Launcher.dbEngine.getData(id);
             responseString = Launcher.gson.toJson(dataMap);
+
+        } catch (Exception ex) {
+
+            StringWriter sw = new StringWriter();
+            ex.printStackTrace(new PrintWriter(sw));
+            String exceptionAsString = sw.toString();
+            ex.printStackTrace();
+
+            return Response.status(500).entity(exceptionAsString).build();
+        }
+        return Response.ok(responseString).header("Access-Control-Allow-Origin", "*").build();
+    }
+
+    @GET
+    @Path("/removedata/{id}")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteData(@PathParam("id") String id) {
+        String responseString = "{}";
+        try {
+
+            String queryString = "delete from data WHERE id='" + id + "'";
+
+            System.out.println(queryString);
+
+            int status = Launcher.dbEngine.executeUpdate(queryString);
+
+            System.out.println("status_code: " + status);
+
+            responseString = "{\"status_code\":\"" + status +"\"}";
+
+            if (status == -1) {
+                return Response.status(Response.Status.FORBIDDEN).entity("Couldn't remove the data. It is referenced elsewhere!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            } else if (status == 0) {
+                return Response.status(Response.Status.NOT_FOUND).entity("Couldn't remove the data. It doesn't exist!")
+                    .header("Access-Control-Allow-Origin", "*").build();
+            }
+
+
 
         } catch (Exception ex) {
 
